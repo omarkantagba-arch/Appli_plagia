@@ -1,0 +1,342 @@
+<div class="page-layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <span class="material-icons-round" style="font-size:20px">plagiarism</span>
+        </div>
+        <span class="logo-text">VERI<span>PLAG</span></span>
+      </div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar">
+          {{ currentUser?.prenom?.charAt(0) }}{{ currentUser?.nom?.charAt(0) }}
+        </div>
+        <div>
+          <div class="user-name">{{ currentUser?.prenom }} {{ currentUser?.nom }}</div>
+          <span class="user-role">{{ currentUser?.role }}</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+
+      <button class="nav-item active" (click)="navigateTo('/dashboard')">
+        <span class="material-icons-round">dashboard</span>
+        Tableau de bord
+      </button>
+
+      <button class="nav-item" (click)="navigateTo('/themes')">
+        <span class="material-icons-round">topic</span>
+        Thèmes
+      </button>
+
+      <button class="nav-item" (click)="navigateTo('/reports')">
+        <span class="material-icons-round">description</span>
+        Rapports
+      </button>
+
+      <button class="nav-item" *ngIf="currentUser?.role === 'COORDINATEUR' || currentUser?.role === 'DA'" (click)="navigateTo('/soutenances')">
+        <span class="material-icons-round">event</span>
+        Soutenances
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-item" (click)="logout()" style="color: var(--danger)">
+        <span class="material-icons-round">logout</span>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="page-main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Tableau de bord</div>
+        <div class="topbar-subtitle" *ngIf="currentUser?.filiere">Filière : {{ currentUser?.filiere }}</div>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Welcome Banner -->
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h2>Bonjour, {{ currentUser?.prenom }} 👋</h2>
+          <p>Bienvenue sur votre espace VeriPlag. Voici un aperçu de votre activité.</p>
+        </div>
+        <span class="welcome-badge">{{ currentUser?.role }}</span>
+      </div>
+
+      <!-- ===== ÉTUDIANT ===== -->
+      <div *ngIf="currentUser?.role === 'ETUDIANT'">
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple"><span class="material-icons-round">topic</span></div>
+            <div>
+              <div class="stat-value">{{ themes.length }}</div>
+              <div class="stat-label">Thème(s) soumis</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><span class="material-icons-round">check_circle</span></div>
+            <div>
+              <div class="stat-value">{{ countThemesByStatus('VALIDE') }}</div>
+              <div class="stat-label">Thème(s) validé(s)</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue"><span class="material-icons-round">description</span></div>
+            <div>
+              <div class="stat-value">{{ rapports.length }}</div>
+              <div class="stat-label">Rapport(s) déposé(s)</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber"><span class="material-icons-round">event</span></div>
+            <div>
+              <div class="stat-value">{{ soutenance ? '1' : '0' }}</div>
+              <div class="stat-label">Soutenance programmée</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thèmes -->
+        <div class="section-header">
+          <div>
+            <div class="section-title">Mes Thèmes</div>
+            <div class="section-subtitle">Suivez l'état de vos soumissions</div>
+          </div>
+          <button class="btn btn-primary" (click)="navigateTo('/themes')">
+            <span class="material-icons-round" style="font-size:18px">add</span>
+            Soumettre un thème
+          </button>
+        </div>
+
+        <div *ngIf="loading" class="loading-state">
+          <div class="spinner"></div>
+          <span>Chargement...</span>
+        </div>
+
+        <div *ngIf="!loading && themes.length === 0" class="empty-state">
+          <div class="empty-icon"><span class="material-icons-round">topic</span></div>
+          <p>Vous n'avez pas encore soumis de thème.</p>
+          <button class="btn btn-primary" (click)="navigateTo('/themes')">Soumettre mon premier thème</button>
+        </div>
+
+        <div class="cards-grid" *ngIf="!loading && themes.length > 0">
+          <div class="theme-card" *ngFor="let theme of themes">
+            <div class="theme-card-title">{{ theme.titre }}</div>
+            <div class="theme-card-desc">{{ theme.description }}</div>
+            <div class="theme-card-footer">
+              <span class="badge" [ngClass]="{
+                'badge-success': theme.statut === 'VALIDE',
+                'badge-danger':  theme.statut === 'REJETE',
+                'badge-warning': theme.statut === 'EN_ATTENTE',
+                'badge-info':    theme.statut === 'PROPOSE_VALIDATION' || theme.statut === 'PROPOSE_REJET'
+              }">{{ theme.statut }}</span>
+              <span *ngIf="theme.plagiatScore !== null && theme.plagiatScore !== undefined"
+                class="score-text"
+                [ngClass]="{
+                  'low':    theme.plagiatScore < 10,
+                  'medium': theme.plagiatScore >= 10 && theme.plagiatScore < 30,
+                  'high':   theme.plagiatScore >= 30
+                }">
+                {{ theme.plagiatScore | number:'1.0-0' }}% similarité
+              </span>
+            </div>
+            <div class="comment-box" *ngIf="theme.commentaire">
+              <strong>Commentaire :</strong> {{ theme.commentaire }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Rapports -->
+        <div class="section-header">
+          <div>
+            <div class="section-title">Mes Rapports</div>
+            <div class="section-subtitle">Historique de vos dépôts</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary" (click)="navigateTo('/reports')">
+              <span class="material-icons-round" style="font-size:18px">visibility</span>
+              Voir tout
+            </button>
+            <button class="btn btn-primary" (click)="navigateTo('/reports')"
+              [disabled]="!hasValidTheme()"
+              [title]="!hasValidTheme() ? 'Thème validé requis' : ''">
+              <span class="material-icons-round" style="font-size:18px">upload_file</span>
+              Déposer
+            </button>
+          </div>
+        </div>
+
+        <div class="info-alert" *ngIf="!hasValidTheme()">
+          <span class="material-icons-round">info</span>
+          <div>
+            <strong>Information :</strong> Vous devez avoir un thème validé avant de pouvoir déposer un rapport.
+            <span *ngIf="themes.length === 0"> Aucun thème soumis pour l'instant.</span>
+          </div>
+        </div>
+
+        <div *ngIf="rapports.length === 0 && !loading" class="empty-state">
+          <div class="empty-icon"><span class="material-icons-round">description</span></div>
+          <p>Aucun rapport déposé pour le moment.</p>
+        </div>
+
+        <div class="cards-grid" *ngIf="rapports.length > 0">
+          <div class="rapport-card" *ngFor="let rapport of rapports">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+              <div>
+                <div style="font-weight:600;font-size:15px">Rapport v{{ rapport.version }}</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">{{ rapport.theme.titre }}</div>
+              </div>
+              <span class="badge" [ngClass]="{
+                'badge-success': rapport.statut === 'VALIDE',
+                'badge-danger':  rapport.statut === 'REJETE',
+                'badge-warning': rapport.statut === 'EN_ANALYSE',
+                'badge-info':    rapport.statut === 'EN_EXAMEN'
+              }">{{ rapport.statut }}</span>
+            </div>
+            <div *ngIf="rapport.plagiatScore !== null && rapport.plagiatScore !== undefined" class="score-bar-wrap">
+              <div class="score-bar">
+                <div class="score-bar-fill"
+                  [ngClass]="{
+                    'low':    rapport.plagiatScore < 20,
+                    'medium': rapport.plagiatScore >= 20 && rapport.plagiatScore <= 40,
+                    'high':   rapport.plagiatScore > 40
+                  }"
+                  [style.width.%]="rapport.plagiatScore">
+                </div>
+              </div>
+              <span class="score-text"
+                [ngClass]="{
+                  'low':    rapport.plagiatScore < 20,
+                  'medium': rapport.plagiatScore >= 20 && rapport.plagiatScore <= 40,
+                  'high':   rapport.plagiatScore > 40
+                }">
+                {{ rapport.plagiatScore | number:'1.0-0' }}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Soutenance -->
+        <div class="section-header">
+          <div>
+            <div class="section-title">Ma Soutenance</div>
+            <div class="section-subtitle">Informations sur votre passage</div>
+          </div>
+        </div>
+
+        <div *ngIf="!soutenance" class="empty-state">
+          <div class="empty-icon"><span class="material-icons-round">event_busy</span></div>
+          <p>Aucune soutenance programmée pour le moment.</p>
+        </div>
+
+        <div class="soutenance-card" *ngIf="soutenance">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <span class="material-icons-round" style="color:var(--primary)">event</span>
+            <span style="font-size:16px;font-weight:600">Soutenance programmée</span>
+            <span class="badge badge-success" style="margin-left:auto">Confirmée</span>
+          </div>
+          <div class="soutenance-grid">
+            <div class="soutenance-item">
+              <span class="label">Date</span>
+              <span class="value">{{ soutenance.date | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="soutenance-item">
+              <span class="label">Heure</span>
+              <span class="value">{{ soutenance.heure }}</span>
+            </div>
+            <div class="soutenance-item">
+              <span class="label">Salle</span>
+              <span class="value">{{ soutenance.salle }}</span>
+            </div>
+            <div class="soutenance-item" *ngIf="soutenance.note">
+              <span class="label">Note</span>
+              <span class="value" style="color:var(--success)">{{ soutenance.note }}/20</span>
+            </div>
+          </div>
+          <div *ngIf="soutenance.jury" style="margin-top:16px;font-size:13px;color:var(--text-secondary)">
+            <strong>Jury :</strong> {{ soutenance.jury.join(', ') }}
+          </div>
+          <div *ngIf="soutenance.appreciation" style="margin-top:8px;font-size:13px;color:var(--text-secondary)">
+            <strong>Appréciation :</strong> {{ soutenance.appreciation }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== COORDINATEUR / DA ===== -->
+      <div *ngIf="currentUser?.role === 'COORDINATEUR' || currentUser?.role === 'DA'">
+        <div class="section-header" style="margin-bottom:24px">
+          <div>
+            <div class="section-title">Accès rapide</div>
+            <div class="section-subtitle">Gérez les soumissions et les plannings</div>
+          </div>
+        </div>
+
+        <div class="cards-grid">
+          <div class="action-card" (click)="navigateTo('/themes')">
+            <div class="action-card-icon purple">
+              <span class="material-icons-round">topic</span>
+            </div>
+            <h3>Validation des Thèmes</h3>
+            <p>Examinez et validez les thèmes soumis par les étudiants</p>
+            <button class="btn btn-primary btn-sm" style="align-self:flex-start">
+              <span class="material-icons-round" style="font-size:16px">arrow_forward</span>
+              Accéder
+            </button>
+          </div>
+
+          <div class="action-card" (click)="navigateTo('/reports')">
+            <div class="action-card-icon blue">
+              <span class="material-icons-round">description</span>
+            </div>
+            <h3>Validation des Rapports</h3>
+            <p>Examinez les rapports déposés et les scores de plagiat</p>
+            <button class="btn btn-primary btn-sm" style="align-self:flex-start">
+              <span class="material-icons-round" style="font-size:16px">arrow_forward</span>
+              Accéder
+            </button>
+          </div>
+
+          <div class="action-card" *ngIf="currentUser?.role === 'COORDINATEUR'" (click)="navigateTo('/soutenances')">
+            <div class="action-card-icon green">
+              <span class="material-icons-round">event</span>
+            </div>
+            <h3>Soutenances</h3>
+            <p>Planifiez et gérez les soutenances des étudiants</p>
+            <button class="btn btn-primary btn-sm" style="align-self:flex-start">
+              <span class="material-icons-round" style="font-size:16px">arrow_forward</span>
+              Accéder
+            </button>
+          </div>
+
+          <div class="action-card" *ngIf="currentUser?.role === 'DA'">
+            <div class="action-card-icon amber">
+              <span class="material-icons-round">bar_chart</span>
+            </div>
+            <h3>Statistiques</h3>
+            <p>Consultez les statistiques globales de la plateforme</p>
+            <button class="btn btn-primary btn-sm" style="align-self:flex-start">
+              <span class="material-icons-round" style="font-size:16px">arrow_forward</span>
+              Accéder
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

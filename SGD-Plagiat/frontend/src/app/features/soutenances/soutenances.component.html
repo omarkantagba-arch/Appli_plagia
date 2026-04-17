@@ -1,0 +1,193 @@
+<div class="page-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <span class="material-icons-round" style="font-size:20px">plagiarism</span>
+        </div>
+        <span class="logo-text">Veri<span>Plag</span></span>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar">{{ authService.getCurrentUser()?.prenom?.charAt(0) }}{{ authService.getCurrentUser()?.nom?.charAt(0) }}</div>
+        <div>
+          <div class="user-name">{{ authService.getCurrentUser()?.prenom }} {{ authService.getCurrentUser()?.nom }}</div>
+          <span class="user-role">{{ authService.getCurrentUser()?.role }}</span>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <button class="nav-item" routerLink="/dashboard"><span class="material-icons-round">dashboard</span>Tableau de bord</button>
+      <button class="nav-item" routerLink="/themes"><span class="material-icons-round">topic</span>Thèmes</button>
+      <button class="nav-item" routerLink="/reports"><span class="material-icons-round">description</span>Rapports</button>
+      <button class="nav-item active"><span class="material-icons-round">event</span>Soutenances</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" routerLink="/dashboard" style="color:var(--danger)"><span class="material-icons-round">arrow_back</span>Retour</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="page-main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-back" routerLink="/dashboard">
+          <span class="material-icons-round" style="font-size:18px">arrow_back</span>
+        </button>
+        <div>
+          <div class="topbar-title">Gestion des Soutenances</div>
+          <div class="topbar-subtitle">{{ soutenances.length }} soutenance(s) programmée(s)</div>
+        </div>
+      </div>
+      <button class="btn btn-primary"
+        *ngIf="authService.hasRole('COORDINATEUR') || authService.hasRole('DA')"
+        (click)="openCreateModal()">
+        <span class="material-icons-round" style="font-size:18px">add</span>
+        Programmer une soutenance
+      </button>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Empty -->
+      <div *ngIf="soutenances.length === 0" class="empty-state">
+        <div class="empty-icon"><span class="material-icons-round">event_busy</span></div>
+        <p>Aucune soutenance programmée pour le moment.</p>
+        <button class="btn btn-primary"
+          *ngIf="authService.hasRole('COORDINATEUR') || authService.hasRole('DA')"
+          (click)="openCreateModal()">
+          Programmer une soutenance
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper" *ngIf="soutenances.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Étudiant</th>
+              <th>Thème</th>
+              <th>Date</th>
+              <th>Heure</th>
+              <th>Salle</th>
+              <th>Jury</th>
+              <th>Note</th>
+              <th *ngIf="authService.hasRole('COORDINATEUR') || authService.hasRole('DA')">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let soutenance of soutenances">
+              <td>
+                <div style="font-weight:500">{{ soutenance.etudiant.nom }} {{ soutenance.etudiant.prenom }}</div>
+              </td>
+              <td style="max-width:200px">
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" [title]="soutenance.theme.titre">
+                  {{ soutenance.theme.titre }}
+                </div>
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="material-icons-round" style="font-size:15px;color:var(--text-muted)">calendar_today</span>
+                  {{ soutenance.date | date:'dd/MM/yyyy' }}
+                </div>
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="material-icons-round" style="font-size:15px;color:var(--text-muted)">schedule</span>
+                  {{ soutenance.heure }}
+                </div>
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="material-icons-round" style="font-size:15px;color:var(--text-muted)">room</span>
+                  {{ soutenance.salle }}
+                </div>
+              </td>
+              <td>
+                <div class="jury-chips">
+                  <span class="jury-chip" *ngFor="let membre of soutenance.jury">{{ membre }}</span>
+                </div>
+              </td>
+              <td>
+                <span *ngIf="soutenance.note" style="font-weight:600;color:var(--success)">{{ soutenance.note }}/20</span>
+                <span *ngIf="!soutenance.note" style="color:var(--text-muted)">—</span>
+              </td>
+              <td *ngIf="authService.hasRole('COORDINATEUR') || authService.hasRole('DA')">
+                <div class="action-btns">
+                  <button class="btn btn-secondary btn-sm btn-icon" (click)="openEditModal(soutenance)" title="Modifier">
+                    <span class="material-icons-round" style="font-size:16px">edit</span>
+                  </button>
+                  <button class="btn btn-danger btn-sm btn-icon" (click)="deleteSoutenance(soutenance.id!)" title="Annuler">
+                    <span class="material-icons-round" style="font-size:16px">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditMode ? 'Modifier' : 'Programmer' }} une soutenance</h2>
+      <button class="btn btn-ghost btn-icon" (click)="closeModal()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form (ngSubmit)="submitForm()">
+        <div class="form-group">
+          <label>Thème *</label>
+          <select class="form-control" [(ngModel)]="soutenanceForm.themeId" name="themeId" required [disabled]="isEditMode">
+            <option [value]="0">— Sélectionner un thème validé —</option>
+            <option *ngFor="let theme of validatedThemes" [value]="theme.id">
+              {{ theme.titre }} — {{ theme.etudiant.nom }} {{ theme.etudiant.prenom }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date *</label>
+            <input type="date" class="form-control" [(ngModel)]="soutenanceForm.date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label>Heure *</label>
+            <input type="time" class="form-control" [(ngModel)]="soutenanceForm.heure" name="heure" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Salle *</label>
+          <input type="text" class="form-control" [(ngModel)]="soutenanceForm.salle" name="salle"
+            placeholder="Ex: Amphi A, Salle 201" required>
+        </div>
+
+        <div class="form-group">
+          <label>Membres du jury * <span style="font-weight:400;color:var(--text-muted)">(séparés par des virgules)</span></label>
+          <textarea class="form-control" [(ngModel)]="juryInput" name="juryInput" rows="3"
+            placeholder="Ex: Dr. Dupont, Pr. Martin, Dr. Bernard" required></textarea>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="submitForm()">
+        <span class="material-icons-round" style="font-size:18px">{{ isEditMode ? 'save' : 'event_available' }}</span>
+        {{ isEditMode ? 'Enregistrer' : 'Programmer' }}
+      </button>
+    </div>
+  </div>
+</div>

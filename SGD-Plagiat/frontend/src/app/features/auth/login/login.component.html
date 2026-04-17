@@ -1,0 +1,75 @@
+<div class="auth-layout">
+  <!-- Brand Side -->
+  <div class="auth-brand">
+    <div class="brand-content">
+      <div class="brand-logo">
+        <span class="material-icons-round">plagiarism</span>
+      </div>
+      <h1>VeriPlag</h1>
+      <p>Système intelligent de gestion et de détection de plagiat académique</p>
+
+      <div class="brand-features">
+        <div class="brand-feature">
+          <span class="material-icons-round">shield</span>
+          <span>Détection avancée de similarité</span>
+        </div>
+        <div class="brand-feature">
+          <span class="material-icons-round">assignment_turned_in</span>
+          <span>Gestion complète des thèmes et rapports</span>
+        </div>
+        <div class="brand-feature">
+          <span class="material-icons-round">event</span>
+          <span>Planification des soutenances</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Side -->
+  <div class="auth-form-side">
+    <div class="auth-form-header">
+      <h2>Bon retour 👋</h2>
+      <p>Connectez-vous à votre espace VeriPlag</p>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      <span class="material-icons-round" style="font-size:18px">error_outline</span>
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Adresse email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          [(ngModel)]="credentials.email"
+          name="email"
+          placeholder="vous@exemple.com"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          [(ngModel)]="credentials.password"
+          name="password"
+          placeholder="••••••••"
+          required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="loading" style="margin-top:8px">
+        <span class="spinner" *ngIf="loading" style="width:16px;height:16px;border-width:2px"></span>
+        {{ loading ? 'Connexion...' : 'Se connecter' }}
+      </button>
+    </form>
+
+    <p class="auth-link">
+      Pas encore de compte ? <a routerLink="/register">Créer un compte</a>
+    </p>
+  </div>
+</div>

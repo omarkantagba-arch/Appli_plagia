@@ -1,0 +1,72 @@
+<div class="auth-layout">
+  <!-- Brand Side -->
+  <div class="auth-brand">
+    <div class="brand-content">
+      <div class="brand-logo">
+        <span class="material-icons-round">plagiarism</span>
+      </div>
+      <h1>VeriPlag</h1>
+      <p>Rejoignez la plateforme académique de gestion et de détection de plagiat VeriPlag</p>
+    </div>
+  </div>
+
+  <!-- Form Side -->
+  <div class="auth-form-side">
+    <div class="auth-form-header">
+      <h2>Créer un compte</h2>
+      <p>Remplissez le formulaire pour rejoindre PlagiCheck</p>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      <span class="material-icons-round" style="font-size:18px">error_outline</span>
+      {{ errorMessage }}
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="prenom">Prénom</label>
+          <input type="text" id="prenom" class="form-control" [(ngModel)]="registerData.prenom" name="prenom" placeholder="Jean" required>
+        </div>
+        <div class="form-group">
+          <label for="nom">Nom</label>
+          <input type="text" id="nom" class="form-control" [(ngModel)]="registerData.nom" name="nom" placeholder="Dupont" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Adresse email</label>
+        <input type="email" id="email" class="form-control" [(ngModel)]="registerData.email" name="email" placeholder="jean.dupont@exemple.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" class="form-control" [(ngModel)]="registerData.password" name="password" placeholder="••••••••" required>
+      </div>
+
+      <div class="form-group">
+        <label for="role">Rôle</label>
+        <select id="role" class="form-control" [(ngModel)]="registerData.role" name="role" required>
+          <option value="">— Sélectionner un rôle —</option>
+          <option value="ETUDIANT">Étudiant</option>
+          <option value="COORDINATEUR">Coordinateur</option>
+          <option value="DA">Directeur Académique</option>
+        </select>
+      </div>
+
+      <div class="form-group" *ngIf="registerData.role === 'ETUDIANT' || registerData.role === 'COORDINATEUR'">
+        <label for="filiere">Filière</label>
+        <input type="text" id="filiere" class="form-control" [(ngModel)]="registerData.filiere" name="filiere" placeholder="Ex: Informatique, MIAGE...">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="loading" style="margin-top:8px">
+        <span class="spinner" *ngIf="loading" style="width:16px;height:16px;border-width:2px"></span>
+        {{ loading ? 'Inscription...' : "S'inscrire" }}
+      </button>
+    </form>
+
+    <p class="auth-link">
+      Déjà un compte ? <a routerLink="/login">Se connecter</a>
+    </p>
+  </div>
+</div>

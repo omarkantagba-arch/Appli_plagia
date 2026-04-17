@@ -1,0 +1,194 @@
+<div class="page-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <span class="material-icons-round" style="font-size:20px">plagiarism</span>
+        </div>
+        <span class="logo-text">Veri<span>Plag</span></span>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar">{{ currentUser?.prenom?.charAt(0) }}{{ currentUser?.nom?.charAt(0) }}</div>
+        <div>
+          <div class="user-name">{{ currentUser?.prenom }} {{ currentUser?.nom }}</div>
+          <span class="user-role">{{ currentUser?.role }}</span>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <button class="nav-item" (click)="goBack()"><span class="material-icons-round">dashboard</span>Tableau de bord</button>
+      <button class="nav-item" [routerLink]="['/themes']"><span class="material-icons-round">topic</span>Thèmes</button>
+      <button class="nav-item active"><span class="material-icons-round">description</span>Rapports</button>
+      <button class="nav-item" *ngIf="currentUser?.role === 'COORDINATEUR' || currentUser?.role === 'DA'" [routerLink]="['/soutenances']"><span class="material-icons-round">event</span>Soutenances</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" (click)="goBack()" style="color:var(--danger)"><span class="material-icons-round">arrow_back</span>Retour</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="page-main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-back" (click)="goBack()">
+          <span class="material-icons-round" style="font-size:18px">arrow_back</span>
+        </button>
+        <div>
+          <div class="topbar-title">Gestion des Rapports</div>
+          <div class="topbar-subtitle">{{ rapports.length }} rapport(s) au total</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" *ngIf="currentUser?.role === 'ETUDIANT' && themes.length > 0" (click)="toggleForm()">
+        <span class="material-icons-round" style="font-size:18px">{{ showForm ? 'close' : 'upload_file' }}</span>
+        {{ showForm ? 'Annuler' : 'Déposer un rapport' }}
+      </button>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Alert: no validated theme -->
+      <div class="alert alert-warning" *ngIf="currentUser?.role === 'ETUDIANT' && themes.length === 0">
+        <span class="material-icons-round" style="font-size:18px">warning</span>
+        <div>
+          <strong>Attention :</strong> Vous devez avoir un thème validé avant de déposer un rapport.
+          <br>
+          <a [routerLink]="['/themes']" class="btn btn-sm btn-primary" style="margin-top:8px;display:inline-flex">
+            Soumettre un thème
+          </a>
+        </div>
+      </div>
+
+      <!-- Form Panel -->
+      <div class="form-panel" *ngIf="showForm">
+        <div class="form-panel-title">
+          <span class="material-icons-round" style="color:var(--primary)">upload_file</span>
+          Nouveau Rapport
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger">
+          <span class="material-icons-round" style="font-size:18px">error_outline</span>
+          {{ errorMessage }}
+        </div>
+
+        <form (ngSubmit)="submitRapport()">
+          <div class="form-group">
+            <label for="theme">Thème associé *</label>
+            <select id="theme" class="form-control" [(ngModel)]="selectedThemeId" name="theme" required>
+              <option [value]="null">— Choisir un thème validé —</option>
+              <option *ngFor="let theme of themes" [value]="theme.id">{{ theme.titre }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Fichier du rapport *</label>
+            <div class="file-drop-zone" (click)="fileInput.click()">
+              <span class="material-icons-round">cloud_upload</span>
+              <p>Cliquez pour sélectionner un fichier</p>
+              <small>PDF ou DOCX — max 50 MB</small>
+              <input #fileInput type="file" style="display:none" (change)="onFileSelected($event)" accept=".pdf,.docx">
+            </div>
+            <div class="file-selected" *ngIf="selectedFile">
+              <span class="material-icons-round">insert_drive_file</span>
+              <span>{{ selectedFile.name }} — {{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="toggleForm()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading || !selectedFile || !selectedThemeId">
+              <span class="spinner" *ngIf="loading" style="width:14px;height:14px;border-width:2px"></span>
+              {{ loading ? 'Dépôt en cours...' : 'Déposer le rapport' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading && rapports.length === 0" class="loading-state">
+        <div class="spinner"></div>
+        <span>Chargement des rapports...</span>
+      </div>
+
+      <!-- Empty -->
+      <div *ngIf="!loading && rapports.length === 0 && !showForm" class="empty-state">
+        <div class="empty-icon"><span class="material-icons-round">description</span></div>
+        <p>Aucun rapport trouvé.</p>
+      </div>
+
+      <!-- Grid -->
+      <div class="reports-grid" *ngIf="rapports.length > 0">
+        <div class="report-card" *ngFor="let rapport of rapports">
+          <div class="report-card-header">
+            <div>
+              <div style="font-weight:600;font-size:15px">Rapport v{{ rapport.version }}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">{{ rapport.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+            <span class="badge" [ngClass]="{
+              'badge-success': rapport.statut === 'VALIDE',
+              'badge-danger':  rapport.statut === 'REJETE',
+              'badge-warning': rapport.statut === 'EN_ANALYSE',
+              'badge-info':    rapport.statut === 'EN_EXAMEN'
+            }">{{ rapport.statut }}</span>
+          </div>
+
+          <div class="report-meta">
+            <div class="meta-row">
+              <span class="material-icons-round">topic</span>
+              <span>{{ rapport.theme ? rapport.theme.titre : 'N/A' }}</span>
+            </div>
+            <div class="meta-row" *ngIf="rapport.etudiant">
+              <span class="material-icons-round">person</span>
+              <span>{{ rapport.etudiant.prenom }} {{ rapport.etudiant.nom }}</span>
+            </div>
+          </div>
+
+          <div class="plagiat-section" *ngIf="rapport.plagiatScore !== null && rapport.plagiatScore !== undefined">
+            <div class="plagiat-label">Score de plagiat</div>
+            <div class="score-bar-wrap">
+              <div class="score-bar">
+                <div class="score-bar-fill"
+                  [ngClass]="{
+                    'low':    rapport.plagiatScore < 20,
+                    'medium': rapport.plagiatScore >= 20 && rapport.plagiatScore <= 40,
+                    'high':   rapport.plagiatScore > 40
+                  }"
+                  [style.width.%]="rapport.plagiatScore">
+                </div>
+              </div>
+              <span class="score-text"
+                [ngClass]="{
+                  'low':    rapport.plagiatScore < 20,
+                  'medium': rapport.plagiatScore >= 20 && rapport.plagiatScore <= 40,
+                  'high':   rapport.plagiatScore > 40
+                }">
+                {{ rapport.plagiatScore | number:'1.0-0' }}%
+              </span>
+            </div>
+            <div class="interpretation ok"    *ngIf="rapport.plagiatScore < 20">
+              <span class="material-icons-round">check_circle</span> Taux acceptable — Validation automatique
+            </div>
+            <div class="interpretation warn"  *ngIf="rapport.plagiatScore >= 20 && rapport.plagiatScore <= 40">
+              <span class="material-icons-round">warning</span> Taux modéré — Examen requis
+            </div>
+            <div class="interpretation danger" *ngIf="rapport.plagiatScore > 40">
+              <span class="material-icons-round">cancel</span> Taux élevé — Rejet automatique
+            </div>
+          </div>
+
+          <div class="report-actions">
+            <a [href]="rapport.fichierUrl" target="_blank" class="btn btn-secondary btn-sm">
+              <span class="material-icons-round" style="font-size:16px">download</span>
+              Télécharger
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: plagicheck-backend
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/plagicheck_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+  
+  security:
+    jwt:
+      secret: plagicheck-secret-key-change-in-production-minimum-256-bits-for-security
+      expiration: 86400000
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+supabase:
+  url: ${SUPABASE_URL:https://your-project.supabase.co}
+  key: ${SUPABASE_KEY:your-supabase-key}
+  bucket: plagicheck-files
+
+serpapi:
+  key: 9fed7aaf497dd6f86b0ee351443b0efb425ecc92f90c22f92b430eb3c72dd44a
+  url: https://serpapi.com/search
+
+plagiarism:
+  threshold:
+    auto-accept: 20
+    auto-reject: 40
+  theme:
+    threshold:
+      fast-track: 10
+      review: 30

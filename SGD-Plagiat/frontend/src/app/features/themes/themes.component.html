@@ -1,0 +1,242 @@
+<div class="page-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <span class="material-icons-round" style="font-size:20px">plagiarism</span>
+        </div>
+        <span class="logo-text">Veri<span>Plag</span></span>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar">{{ currentUser?.prenom?.charAt(0) }}{{ currentUser?.nom?.charAt(0) }}</div>
+        <div>
+          <div class="user-name">{{ currentUser?.prenom }} {{ currentUser?.nom }}</div>
+          <span class="user-role">{{ currentUser?.role }}</span>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <button class="nav-item" (click)="goBack()"><span class="material-icons-round">dashboard</span>Tableau de bord</button>
+      <button class="nav-item active"><span class="material-icons-round">topic</span>Thèmes</button>
+      <button class="nav-item" (click)="navigateToReports()"><span class="material-icons-round">description</span>Rapports</button>
+      <button class="nav-item" *ngIf="currentUser?.role === 'COORDINATEUR' || currentUser?.role === 'DA'" (click)="navigateToSoutenances()"><span class="material-icons-round">event</span>Soutenances</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" (click)="goBack()" style="color:var(--danger)"><span class="material-icons-round">logout</span>Retour</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="page-main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-back" (click)="goBack()">
+          <span class="material-icons-round" style="font-size:18px">arrow_back</span>
+        </button>
+        <div>
+          <div class="topbar-title">Gestion des Thèmes</div>
+          <div class="topbar-subtitle">{{ themes.length }} thème(s) au total</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" *ngIf="currentUser?.role === 'ETUDIANT'" (click)="toggleForm()">
+        <span class="material-icons-round" style="font-size:18px">{{ showForm ? 'close' : 'add' }}</span>
+        {{ showForm ? 'Annuler' : 'Soumettre un thème' }}
+      </button>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Form Panel -->
+      <div class="form-panel" *ngIf="showForm">
+        <div class="form-panel-title">
+          <span class="material-icons-round" style="color:var(--primary)">add_circle</span>
+          Nouveau Thème
+        </div>
+        <form (ngSubmit)="submitTheme()">
+          <div class="form-group">
+            <label for="titre">Titre du thème *</label>
+            <input type="text" id="titre" class="form-control" [(ngModel)]="newTheme.titre" name="titre"
+              placeholder="Ex: Intelligence Artificielle dans la santé" required>
+          </div>
+          <div class="form-group">
+            <label for="description">Description *</label>
+            <textarea id="description" class="form-control" [(ngModel)]="newTheme.description" name="description"
+              rows="5" placeholder="Décrivez votre thème en détail..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="filiere">Filière</label>
+            <input type="text" id="filiere" class="form-control" [(ngModel)]="newTheme.filiere" name="filiere" readonly>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="toggleForm()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading || !newTheme.titre || !newTheme.description">
+              <span class="spinner" *ngIf="loading" style="width:14px;height:14px;border-width:2px"></span>
+              {{ loading ? 'Soumission...' : 'Soumettre' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading && themes.length === 0" class="loading-state">
+        <div class="spinner"></div>
+        <span>Chargement des thèmes...</span>
+      </div>
+
+      <!-- Empty -->
+      <div *ngIf="!loading && themes.length === 0 && !showForm" class="empty-state">
+        <div class="empty-icon"><span class="material-icons-round">topic</span></div>
+        <p>Aucun thème trouvé.</p>
+        <button class="btn btn-primary" *ngIf="currentUser?.role === 'ETUDIANT'" (click)="toggleForm()">
+          Soumettre un thème
+        </button>
+      </div>
+
+      <!-- Grid -->
+      <div class="themes-grid" *ngIf="themes.length > 0">
+        <div class="theme-card" *ngFor="let theme of themes">
+          <div class="theme-card-header">
+            <div class="theme-card-title">{{ theme.titre }}</div>
+            <span class="badge" [ngClass]="{
+              'badge-success': theme.statut === 'VALIDE',
+              'badge-danger':  theme.statut === 'REJETE',
+              'badge-warning': theme.statut === 'EN_ATTENTE',
+              'badge-info':    theme.statut === 'PROPOSE_VALIDATION' || theme.statut === 'PROPOSE_REJET'
+            }">{{ theme.statut }}</span>
+          </div>
+
+          <p class="theme-card-desc">{{ theme.description }}</p>
+
+          <div class="theme-meta">
+            <div class="meta-row" *ngIf="theme.filiere">
+              <span class="material-icons-round">school</span>
+              <span>{{ theme.filiere }}</span>
+            </div>
+            <div class="meta-row" *ngIf="theme.etudiant">
+              <span class="material-icons-round">person</span>
+              <span>{{ theme.etudiant.prenom }} {{ theme.etudiant.nom }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="material-icons-round">calendar_today</span>
+              <span>{{ theme.createdAt | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+
+          <div class="similarity-row" *ngIf="theme.plagiatScore !== null && theme.plagiatScore !== undefined">
+            <div class="similarity-label">Score de similarité</div>
+            <div class="score-bar-wrap">
+              <div class="score-bar">
+                <div class="score-bar-fill"
+                  [ngClass]="{
+                    'low':    theme.plagiatScore < 10,
+                    'medium': theme.plagiatScore >= 10 && theme.plagiatScore < 30,
+                    'high':   theme.plagiatScore >= 30
+                  }"
+                  [style.width.%]="theme.plagiatScore">
+                </div>
+              </div>
+              <span class="score-text"
+                [ngClass]="{
+                  'low':    theme.plagiatScore < 10,
+                  'medium': theme.plagiatScore >= 10 && theme.plagiatScore < 30,
+                  'high':   theme.plagiatScore >= 30
+                }">
+                {{ theme.plagiatScore | number:'1.1-1' }}%
+              </span>
+            </div>
+          </div>
+
+          <div class="comment-box" *ngIf="theme.commentaire">
+            <strong>Commentaire :</strong> {{ theme.commentaire }}
+          </div>
+
+          <div class="theme-actions" *ngIf="currentUser?.role === 'COORDINATEUR' && theme.statut === 'EN_ATTENTE'">
+            <button class="btn btn-primary btn-sm" (click)="openDecisionModal(theme)">
+              <span class="material-icons-round" style="font-size:16px">gavel</span>
+              Prendre une décision
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal décision -->
+<div class="modal-overlay" *ngIf="showDecisionModal" (click)="closeDecisionModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Décision sur le thème</h2>
+      <button class="btn btn-ghost btn-icon" (click)="closeDecisionModal()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px">
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px">{{ selectedTheme?.titre }}</div>
+        <div style="font-size:13px;color:var(--text-secondary)">{{ selectedTheme?.description }}</div>
+        <div *ngIf="selectedTheme?.plagiatScore !== null && selectedTheme?.plagiatScore !== undefined"
+          style="margin-top:10px">
+          <div class="score-bar-wrap">
+            <span style="font-size:12px;color:var(--text-muted);min-width:100px">Similarité :</span>
+            <div class="score-bar">
+              <div class="score-bar-fill"
+                [ngClass]="{
+                  'low':    selectedTheme!.plagiatScore! < 10,
+                  'medium': selectedTheme!.plagiatScore! >= 10 && selectedTheme!.plagiatScore! < 30,
+                  'high':   selectedTheme!.plagiatScore! >= 30
+                }"
+                [style.width.%]="selectedTheme?.plagiatScore">
+              </div>
+            </div>
+            <span class="score-text"
+              [ngClass]="{
+                'low':    selectedTheme!.plagiatScore! < 10,
+                'medium': selectedTheme!.plagiatScore! >= 10 && selectedTheme!.plagiatScore! < 30,
+                'high':   selectedTheme!.plagiatScore! >= 30
+              }">
+              {{ selectedTheme?.plagiatScore | number:'1.1-1' }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Décision *</label>
+        <div class="radio-group">
+          <label class="radio-option" [ngClass]="{'selected-validate': decision === 'VALIDER'}">
+            <input type="radio" name="decision" value="VALIDER" [(ngModel)]="decision">
+            <span class="material-icons-round" style="color:var(--success);font-size:18px">check_circle</span>
+            Valider le thème
+          </label>
+          <label class="radio-option" [ngClass]="{'selected-reject': decision === 'REJETER'}">
+            <input type="radio" name="decision" value="REJETER" [(ngModel)]="decision">
+            <span class="material-icons-round" style="color:var(--danger);font-size:18px">cancel</span>
+            Rejeter le thème
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="commentaire">Commentaire (optionnel)</label>
+        <textarea id="commentaire" class="form-control" [(ngModel)]="commentaire" rows="3"
+          placeholder="Ajoutez un commentaire pour l'étudiant..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDecisionModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="submitDecision()" [disabled]="!decision || loading">
+        <span class="spinner" *ngIf="loading" style="width:14px;height:14px;border-width:2px"></span>
+        {{ loading ? 'Enregistrement...' : 'Confirmer la décision' }}
+      </button>
+    </div>
+  </div>
+</div>
